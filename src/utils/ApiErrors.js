@@ -1,9 +1,9 @@
-class ApiErrors extends Error{
+class ApiError extends Error{
     constructor(
         stausCode,
         message="something went wrong",
         errors=[],
-        statck=""
+        stack=""
         ){
         super(message)
         this.stausCode=stausCode
@@ -13,8 +13,8 @@ class ApiErrors extends Error{
         this.errors=errors
 
 
-        if(statck){
-            this.statck=statck
+        if(stack){
+            this.stack=stack
         }else{
             Error.captureStackTrace(this, this.constructor)
         }
@@ -22,4 +22,4 @@ class ApiErrors extends Error{
 }
 
 
-export {ApiErrors}
+export {ApiError}
