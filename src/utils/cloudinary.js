@@ -36,4 +36,4 @@ const uploadOnCloud= async (localFilePath)=>{
         return null;
     }
 }
-export {uploadOnCloud};
+export { uploadOnCloud };
