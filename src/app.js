@@ -20,6 +20,6 @@ import userRouter from './routes/user.routes.js'
 //declaration of routes :
 app.use("/api/v1/users",userRouter)
  
-// url will be look like : => http://localhost:3000/api/v1/user/register
+// url will be look like : => http://localhost:3000/api/v1/users/register
 
 export { app}
