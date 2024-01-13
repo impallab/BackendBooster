@@ -65,7 +65,7 @@ const userSchema =new Schema(
     }
 
     userSchema.methods.generateAccessToken= async function(){
-        return await jwt.sign(
+        return  jwt.sign(
             {
                 _id:this._id,
                 email:this.email,
