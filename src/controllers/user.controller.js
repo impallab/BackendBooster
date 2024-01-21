@@ -35,7 +35,7 @@ const registerUser = asyncHandler(async (req, res) => {
 //   const avtar = await uploadOnCloud(avtarLocalPath);
 //   const coverImage = await uploadOnCloud(coverLocalPath);
 
-  //check again specially avtar image uploaded on cloud or not:
+//check again specially avtar image uploaded on cloud or not:
 //   if(!avtar){
 //    throw new ApiError(400,"Avtar image is required.")
 //   }
