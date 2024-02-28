@@ -1,11 +1,12 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiErrors.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloud } from "../utils/cloudinary.js" 
+import { uploadOnCloud } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
-
+//controller to generate access and refresh token together :
 const genAccAndRefTokens = async (userId) => {
   try {
     const user = await User.findById(userId)
@@ -240,7 +241,7 @@ const changePassword = asyncHandler(async (req, res) => {
 const getUserInfo = asyncHandler(async (req, res) => {
   return res
     .status(200)
-    .json(200, req.user, "Current User's details fetched successfully.")
+    .json(new ApiResponse(200, req.user, "Current User's details fetched successfully."));
 })
 
 // To update the user's fullname and email :
@@ -252,8 +253,8 @@ const updateProfileInfo = asyncHandler(async (req, res) => {
     new ApiError(400, "Please provide both Full Name & Email.");
   }
 
-  const user = User.findByIdAndUpdate(
-    req.uesr._id,
+  const user = await User.findByIdAndUpdate(
+    req.uesr?._id,
     {
       $set: {
         fullName,
@@ -271,13 +272,13 @@ const updateProfileInfo = asyncHandler(async (req, res) => {
 
 //To update Avtar File :
 
-const updateAvtar = asyncHandler(async(req,res)=>{
+const updateAvtar = asyncHandler(async (req, res) => {
   avtarLocalPath = req.file?.path;
-  if(!avtarLocalPath){
-    throw new ApiError(400,"Please upload a valid avtar-image file !!");
+  if (!avtarLocalPath) {
+    throw new ApiError(400, "Please upload a valid avtar-image file !!");
   }
 
-  const avtar =avtarLocalPath; // for saving image's local path in database.
+  const avtar = avtarLocalPath; // for saving image's local path in database.
   // const avtar = await uploadOnCloud(avtarLocalPath); //for save the image file in the cloud.
   // if(!avtar.url){
   //   throw new ApiError(400,"Error occured while uploding on cloud!!, Please try again. ");
@@ -286,26 +287,28 @@ const updateAvtar = asyncHandler(async(req,res)=>{
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
-      $set:{
-        avtar:avtar.url
+      $set: {
+        avtar: avtar.url
       }
     },
-    {new : true}
+    { new: true }
   ).select("-password");
   return res
-  .status(200)
-  .json(new ApiResponse(200,user,"User Avtar Image has been updated successfully!"));
+    .status(200)
+    .json(new ApiResponse(200, user, "User Avtar Image has been updated successfully!"));
+
+  // write a utily function and call it to delete the previous avtar:
 })
 
 //To update Cover-image File :
 
-const updateCoverImage = asyncHandler(async(req,res)=>{
+const updateCoverImage = asyncHandler(async (req, res) => {
   coverLocalPath = req.file?.path;
-  if(!coverLocalPath){
-    throw new ApiError(400,"Please upload a valid cover-image file !!");
+  if (!coverLocalPath) {
+    throw new ApiError(400, "Please upload a valid cover-image file !!");
   }
 
-  const coverImage =coverLocalPath; // for saving image's local path in database.
+  const coverImage = coverLocalPath; // for saving image's local path in database.
   // const coverImage = await uploadOnCloud(coverLocalPath); //for save the image file in the cloud.
   // if(!coverImage.url){
   //   throw new ApiError(400,"Error occured while cover-imager uploding on cloud!!");
@@ -314,16 +317,146 @@ const updateCoverImage = asyncHandler(async(req,res)=>{
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
-      $set:{
-        coverImage:coverImage.url
+      $set: {
+        coverImage: coverImage.url
       }
     },
-    {new : true}
+    { new: true }
   ).select("-password");
   return res
-  .status(200)
-  .json(new ApiResponse(200,user,"Cover-image has been updated successfully!"));
+    .status(200)
+    .json(new ApiResponse(200, user, "Cover-image has been updated successfully!"));
+
+  // write a utility  function and call it to delete the previous cover-image:
 })
+
+// TO get the useChannel's information:
+const getUserChannelInfo = asyncHandler(async (eq, res) => {
+  const { username } = body.params;
+  if (!username?.trim()) {
+    throw new ApiError(400, 'Username is missing !!');
+  }
+  //using aggregation pipeline to match and find the channel information :
+  const channel = await User.aggregate(
+    [
+      {
+        $match: {
+          username: username?.toLowerCase()
+        }
+      },
+      {
+        $lookup: {
+          from: "subscriptions", // because in database model-name saved in lowercase and plural.
+          localField: "_id",
+          foreignField: "channel",// as for each subscriber a new document will be created with the channel name to which users are subscribing.
+          as: "subscribers"
+
+        }
+      },
+      {
+        $lookup: {
+          from: "subscriptions", // because in database model-name saved in lowercase and plural.
+          localField: "_id",
+          foreignField: "subscriber",
+          as: "subscribed"
+        }
+      },
+      {
+        $addFields: {
+          totalSubscribers: {
+            $size: "$subscribers"
+          },
+          totalSubscribedByMe: {
+            $size: "$subscribed"
+          },
+          isSubscribed: {
+            $cond: {
+              if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+              then:true,
+              else:false
+            }
+          }
+
+        }
+      },
+      {
+        $project:{
+          fullName:1,
+          username:1,
+          email:1,
+          avtar:1,
+          coverImage:1,
+          totalSubscribers:1,
+          totalSubscribedByMe:1,
+          isSubscribed:1,
+        }
+      }
+    ]
+  )
+
+  if(!channel?.length){
+    throw new ApiError(404,"Channel not found");
+  }
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200,channel[0],"Successfully fetched channel details")
+  );
+});
+
+  //To get watch-history :(
+  const getWatchHistory = asyncHandler(async (req,res)=>{
+    const user = await User.aggregate([
+      {
+        $match:{_id: new mongoose.Types.ObjectId(req.user._id)}
+      },
+      {
+        $lookup:{
+          from:"videos",
+          localField: "watchHistory",
+          foreignField: "_id",
+          as:"watchHistory",
+          pipeline:[
+            {
+              $lookup:{
+                from :"users",
+                localField:"owner",
+                foreignField:"_id",
+                as:"owner",
+                pipeline:[
+                  {
+                    $project:{
+                      username:1,
+                      fullName:1,
+                      avtar:1
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              $addFields:{
+                owner:{
+                  $first:"$owner"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ])
+
+    return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch History fetched successfully."
+      )
+    )
+  })
+
 
 export {
   logOutUser,
@@ -334,6 +467,8 @@ export {
   getUserInfo,
   updateProfileInfo,
   updateAvtar,
-  updateCoverImage
+  updateCoverImage,
+  getUserChannelInfo,
+  getWatchHistory
 }
 
