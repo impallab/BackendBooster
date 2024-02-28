@@ -9,6 +9,7 @@ import {
     registerUser,
     renewAccToken,
     updateAvtar,
+    updateCoverImage,
     updateProfileInfo
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js"
@@ -36,11 +37,11 @@ router.route("/login").post(loginUser);
 router.route("/logout").post(verifyJWT, logOutUser);
 
 router.route("/renew-token").post(renewAccToken);
-router.route("/change-pass"), post(verifyJWT, changePassword);
+router.route("/change-pass").post(verifyJWT, changePassword);
 router.route("/user-info").get(verifyJWT, getUserInfo);
 router.route("/update-info").patch(verifyJWT, updateProfileInfo);
-router.route("/change-avtar").patch(verifyJWT, upload.single("avtar"), updateAvtar);
-router.route("/change-coverImage").patch(verifyJWT, upload.single("coverImage"), updateCoverImage);
+router.route("/change-avtar").patch(verifyJWT, upload.single("avtar"),updateAvtar);
+router.route("/change-coverImage").patch(verifyJWT, upload.single("coverImage"),updateCoverImage);
 
 //taking data from param:
 router.route("/channel/:username").get(verifyJWT, getUserChannelInfo);

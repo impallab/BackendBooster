@@ -156,6 +156,9 @@ const logOutUser = asyncHandler(async (req, res) => {
       $set: {
         refreshToken: undefined
       }
+      // $unset:{
+      //   refreshToken:1
+      // }
     },
     {
       new: true
@@ -176,7 +179,7 @@ const logOutUser = asyncHandler(async (req, res) => {
 
 // controller to renew user's access token with the saved Token :
 const renewAccToken = asyncHandler(async (req, res) => {
-  const userRefToken = rea.cookies.refreshToken || req.body.refreshToken;
+  const userRefToken = req.cookies.refreshToken || req.body.refreshToken;
   if (!userRefToken) {
     throw new ApiError(401, "Unauthorized Request , please login again !")
   }
@@ -273,7 +276,7 @@ const updateProfileInfo = asyncHandler(async (req, res) => {
 //To update Avtar File :
 
 const updateAvtar = asyncHandler(async (req, res) => {
-  avtarLocalPath = req.file?.path;
+  const avtarLocalPath = req.file?.path;
   if (!avtarLocalPath) {
     throw new ApiError(400, "Please upload a valid avtar-image file !!");
   }
@@ -303,7 +306,7 @@ const updateAvtar = asyncHandler(async (req, res) => {
 //To update Cover-image File :
 
 const updateCoverImage = asyncHandler(async (req, res) => {
-  coverLocalPath = req.file?.path;
+  const coverLocalPath = req.file?.path;
   if (!coverLocalPath) {
     throw new ApiError(400, "Please upload a valid cover-image file !!");
   }
@@ -331,8 +334,8 @@ const updateCoverImage = asyncHandler(async (req, res) => {
 })
 
 // TO get the useChannel's information:
-const getUserChannelInfo = asyncHandler(async (eq, res) => {
-  const { username } = body.params;
+const getUserChannelInfo = asyncHandler(async (req, res) => {
+  const { username } = req.params;
   if (!username?.trim()) {
     throw new ApiError(400, 'Username is missing !!');
   }
@@ -388,7 +391,7 @@ const getUserChannelInfo = asyncHandler(async (eq, res) => {
           coverImage:1,
           totalSubscribers:1,
           totalSubscribedByMe:1,
-          isSubscribed:1,
+          isSubscribed:1
         }
       }
     ]
